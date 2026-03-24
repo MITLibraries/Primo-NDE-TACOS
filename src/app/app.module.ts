@@ -2,10 +2,11 @@ import { ApplicationRef, DoBootstrap, Injector, NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
 import { createCustomElement, NgElementConstructor } from '@angular/elements';
 import { Router } from '@angular/router';
-import { selectorComponentMap } from './custom1-module/customComponentMappings';
+import { selectorComponentMap } from './tacos-module/customComponentMappings';
 import { TranslateModule } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { AutoAssetSrcDirective } from './services/auto-asset-src.directive';
+import { provideHttpClient } from '@angular/common/http';
 import { SHELL_ROUTER } from './injection-tokens';
 
 export const AppModule = ({
@@ -19,7 +20,11 @@ export const AppModule = ({
     declarations: [AutoAssetSrcDirective],
     exports: [AutoAssetSrcDirective],
     imports: [BrowserModule, CommonModule, TranslateModule.forRoot({})],
-    providers: [...providers, { provide: SHELL_ROUTER, useValue: shellRouter }],
+    providers: [
+      ...providers,
+      { provide: SHELL_ROUTER, useValue: shellRouter },
+      provideHttpClient(),
+    ],
     bootstrap: [],
   })
   class AppModule implements DoBootstrap {
