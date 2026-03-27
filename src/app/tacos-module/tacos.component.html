@@ -1,0 +1,7 @@
+@if (displayRecs && (tacosResponse$ | async); as response) {
+  @for (suggestion of response?.data?.logSearchEvent?.detectors?.suggestedResources ?? []; 
+        track suggestion.url ) {
+    <p>tacos url: {{ suggestion.url }}</p>
+    <p>tacos title: {{ suggestion.title }}</p>
+  }
+}
