@@ -2,7 +2,7 @@
 name: Publish Assets to CDN
 
 on:
-    workflow_dispatch:
+  workflow_dispatch:
 
 permissions:
   # These are the minimum permissions to allow for OIDC connection to AWS
@@ -15,18 +15,29 @@ defaults:
     shell: bash
 
 jobs:
-    publish:
-        name: Publis
-        runs-on: ubuntu-latest
-        timeout-minutes: 10
-        steps:
-            - uses: actions/checkout@v6
-              with: 
-                persist-credentials: false
+  publish:
+    name: Publish
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
 
-            - name: Configure AWS Credentials
-              id: aws_credentials
-              uses: aws-actions/configure-aws-credentials@v6
-              with:
-                aws-region: us-east-1
-                role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCT_DEV }}:role/primo-nde-tacos-gha-dev
+      - name: Configure AWS Credentials
+        id: aws_credentials
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          aws-region: us-east-1
+          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCT_DEV }}:role/primo-nde-tacos-gha-dev
+
+      - name: Create Fake Files
+        id: fake_files
+        run: |
+          mkdir -p dist/mit-tacos
+          touch dist/mit-tacos/file_1
+          touch dist/mit-tacos/file_2
+
+      - name: Copy to S3
+        id: copy_to_s3
+        run: aws s3 sync dist/mit-tacos/* s3://cdn-origin-dev-222053980223/cdn/nde/tacos/
