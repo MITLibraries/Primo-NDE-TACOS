@@ -1,0 +1,32 @@
+# Publish build package to CDN for development work
+name: Publish Assets to CDN
+
+on:
+    workflow_dispatch:
+
+permissions:
+  # These are the minimum permissions to allow for OIDC connection to AWS
+  id-token: write
+  contents: read
+
+# Set defaults
+defaults:
+  run:
+    shell: bash
+
+jobs:
+    publish:
+        name: Publis
+        runs-on: ubuntu-latest
+        timeout-minutes: 10
+        steps:
+            - uses: actions/checkout@v6
+              with: 
+                persist-credentials: false
+
+            - name: Configure AWS Credentials
+              id: aws_credentials
+              uses: aws-actions/configure-aws-credentials@v6
+              with:
+                aws-region: us-east-1
+                role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCT_DEV }}:role/primo-nde-tacos-gha-dev
