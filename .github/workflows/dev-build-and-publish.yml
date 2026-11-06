@@ -3,6 +3,11 @@ name: Publish Assets to CDN
 
 on:
   workflow_dispatch:
+  pull_request:
+    branches:
+      - mit-main
+    paths-ignore:
+      - '.github/**'
 
 permissions:
   # These are the minimum permissions to allow for OIDC connection to AWS
@@ -16,8 +21,9 @@ defaults:
 
 env:
   # Set these GHA-specific environment values once in the workflow here. These
-  # will be used in a step in the Build job to create a temporary build-settings.env
-  # file to ensure that correct ADDON_NAME is used.
+  # will be used in steps in the Build job to create a temporary build-settings.env
+  # file to ensure that correct ADDON_NAME is used. They will be passed to the
+  # Publish job as "outputs" from the Build job.
   INST_ID: TACOS
   VIEW_ID: DEV
   ADDON_NAME: mit-tacos
@@ -83,7 +89,7 @@ jobs:
   Publish:
     needs: Build
     name: Sync Content to S3 CDN Bucket
-    uses: mitlibraries/.github/.github/workflows/cdn-publish-shared.yml@new-cdn-publishing
+    uses: mitlibraries/.github/.github/workflows/cdn-publish-shared.yml@main
     secrets: inherit
     with:
       AWS_REGION: us-east-1

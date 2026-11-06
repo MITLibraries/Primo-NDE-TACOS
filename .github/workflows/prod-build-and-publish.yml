@@ -1,0 +1,101 @@
+# Publish build package to CDN for development work
+name: Publish Assets to CDN
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  # These are the minimum permissions to allow for OIDC connection to AWS
+  id-token: write
+  contents: read
+
+# Set defaults
+defaults:
+  run:
+    shell: bash
+
+env:
+  # Set these GHA-specific environment values once in the workflow here. These
+  # will be used in steps in the Build job to create a temporary build-settings.env
+  # file to ensure that correct ADDON_NAME is used. They will be passed to the
+  # Publish job as "outputs" from the Build job.
+  INST_ID: TACOS
+  VIEW_ID: PROD
+  ADDON_NAME: mit-tacos
+
+jobs:
+  Build:
+    # First thing to check is that the tagged release that triggered this workflow
+    # is actually on the `mit-main` branch. If not, this job and the Publish job
+    # will not run.
+    if: ${{ github.event.release.target_commitish == 'mit-main' }}
+    name: Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      # In order to make these three values usable by the Publish job, we need to
+      # create them as outputs (since the Publish job calls a shared workflow, it
+      # cannot access workflow environment variables directly). See the Pass 
+      # Environment step at the end of this job.
+      inst_id: ${{ steps.pass_env.outputs.inst_id }}
+      view_id: ${{ steps.pass_env.outputs.view_id }}
+      addon_name: ${{ steps.pass_env.outputs.addon_name }}
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build TACOS NDE package
+        # Create the temporary build-settings.env file that is specific to this
+        # workflow before running the npm build command.
+        run: |
+          cat > build-settings.env << EOF
+          INST_ID=${INST_ID}
+          VIEW_ID=${VIEW_ID}
+          ADDON_NAME=${ADDON_NAME}
+          EOF
+          npm run build
+
+      - name: Upload Build Artifact
+        # We store the build artifact separately so that we can access it in the
+        # second job below (each job runs in a separate container, so uploading
+        # the artifact is the only way to preserve it between jobs).
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ env.ADDON_NAME }}
+          path: dist/${{ env.INST_ID }}-${{ env.VIEW_ID }}
+          archive: true
+          if-no-files-found: error
+
+      - name: Pass Environment
+        id: pass_env
+        run: |
+          echo "inst_id=${INST_ID}" >> "$GITHUB_OUTPUT"
+          echo "view_id=${VIEW_ID}" >> "$GITHUB_OUTPUT"
+          echo "addon_name=${ADDON_NAME}" >> "$GITHUB_OUTPUT"
+
+  Publish:
+    needs: Build
+    name: Sync Content to S3 CDN Bucket
+    uses: mitlibraries/.github/.github/workflows/cdn-publish-shared.yml@main
+    secrets: inherit
+    with:
+      AWS_REGION: us-east-1
+      BUILD_ARTIFACT: ${{ needs.Build.outputs.addon_name }}
+      DISTRIBUTION: standard
+      ENVIRONMENT: prod
+      GHA_ROLE: primo-nde-tacos-gha-prod
+      SOURCE_PATH: dist/${{ needs.Build.outputs.inst_id }}-${{ needs.Build.outputs.view_id }}
+      TARGET_PATH:  /cdn/nde/${{ needs.Build.outputs.addon_name }}/
