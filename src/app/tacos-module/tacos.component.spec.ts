@@ -1,6 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { of } from 'rxjs';
-import { provideMockStore } from '@ngrx/store/testing';
+import { MockStore, provideMockStore } from '@ngrx/store/testing';
 import { TacosComponent, selectSearchTerm } from './tacos.component';
 import { TacosService } from './tacos.service';
 import {
@@ -55,8 +55,37 @@ describe('TacosComponent', () => {
     fixture.detectChanges();
   });
 
+  afterEach(() => {
+    TestBed.inject(MockStore).resetSelectors();
+  });
+
   it('calls the service when search term exists', () => {
     expect(tacosServiceMock.getTacosResponse).toHaveBeenCalledWith('foo');
+  });
+
+  it('does not request recommendations when Search state is missing', () => {
+    const store = TestBed.inject(MockStore);
+    tacosServiceMock.getTacosResponse.calls.reset();
+    store.resetSelectors();
+    store.setState({});
+
+    expect(tacosServiceMock.getTacosResponse).not.toHaveBeenCalled();
+  });
+
+  it('ignores empty search terms and handles a later non-empty term', () => {
+    const store = TestBed.inject(MockStore);
+    const selector = store.overrideSelector(selectSearchTerm, '');
+    tacosServiceMock.getTacosResponse.calls.reset();
+
+    store.refreshState();
+    selector.setResult('   ');
+    store.refreshState();
+    expect(tacosServiceMock.getTacosResponse).not.toHaveBeenCalled();
+
+    selector.setResult('bar');
+    store.refreshState();
+    expect(tacosServiceMock.getTacosResponse).toHaveBeenCalledOnceWith('bar');
+    store.resetSelectors();
   });
 
   it('sets displayRecs from config service', () => {

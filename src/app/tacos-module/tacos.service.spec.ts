@@ -89,5 +89,26 @@ describe('TacosService', () => {
       expect(req.request.body.variables.searchTerm).toBe(searchTerm);
       req.flush({});
     });
+
+    it('logs HTTP errors and completes without emitting a response', () => {
+      const consoleErrorSpy = spyOn(console, 'error');
+      let completed = false;
+
+      service.getTacosResponse('foo').subscribe({
+        next: () => fail('Expected no response after an HTTP error'),
+        complete: () => {
+          completed = true;
+        },
+      });
+
+      const req = httpTesting.expectOne(fakeTacosUrl);
+      req.flush('Server error', {
+        status: 500,
+        statusText: 'Internal Server Error',
+      });
+
+      expect(consoleErrorSpy).toHaveBeenCalled();
+      expect(completed).toBe(true);
+    });
   });
 });
