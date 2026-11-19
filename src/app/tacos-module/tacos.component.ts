@@ -56,7 +56,7 @@ export class TacosComponent implements OnInit {
     // 3. Filters out empty search terms
     // 4. Calls TACOS service with the search term
     this.tacosResponse$ = this.store.select(selectSearchTerm).pipe(
-      map((q) => (q ?? '').trim()),
+      map((q) => q.trim()),
       filter((q) => q.length > 0),
       switchMap((q) => this.tacosService.getTacosResponse(q)),
       shareReplay({ bufferSize: 1, refCount: true }),

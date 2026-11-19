@@ -108,6 +108,27 @@ describe('ConfigService', () => {
     });
   });
 
+  describe('with a non-boolean, non-string displayRecs value', () => {
+    it('converts the value to a boolean', () => {
+      TestBed.configureTestingModule({
+        providers: [
+          TacosConfigService,
+          {
+            provide: 'MODULE_PARAMETERS',
+            useValue: {
+              tacosUrl: 'https://tacos.libraries.mit.edu/graphql',
+              displayRecs: 1,
+              sourceSystem: 'nde-sandbox',
+            },
+          },
+        ],
+      });
+      service = TestBed.inject(TacosConfigService);
+
+      expect(service.displayRecs).toBe(true);
+    });
+  });
+
   describe('with MODULE_PARAMETERS without the expected keys ', () => {
     beforeEach(() => {
       TestBed.configureTestingModule({
