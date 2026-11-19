@@ -6,6 +6,8 @@
 
 # Development workflows
 
+The `Run Tests` GitHub Actions workflow runs the Angular test suite in headless Chrome whenever commits are pushed. Run the same suite locally with `npm test -- --no-watch --browsers=ChromeHeadlessNoSandbox`.
+
 ## Developing and testing locally
 
 
