@@ -95,6 +95,7 @@ describe('TacosService', () => {
       let completed = false;
 
       service.getTacosResponse('foo').subscribe({
+        next: () => fail('Expected no response after an HTTP error'),
         complete: () => {
           completed = true;
         },
